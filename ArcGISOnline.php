@@ -133,9 +133,14 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
         $streetName = !empty($data->Address) ? $data->Address : null;
         $city = !empty($data->City) ? $data->City : null;
         $zipcode = !empty($data->Postal) ? $data->Postal : null;
-        $region = !empty($data->Region) ? $data->Region : null;
-        $county = !empty($data->Subregion) ? $data->Subregion : null;
         $countryCode = !empty($data->CountryCode) ? $data->CountryCode : null;
+        
+        $adminLevels = [];
+        foreach (['Region', 'Subregion'] as $i => $property) {
+            if (!empty($data->{$property})) {
+                $adminLevels[] = ['name' => $data->{$property}, 'level' => $i + 1];
+            }
+        }
 
         return new AddressCollection([
             Address::createFromArray([
@@ -145,9 +150,8 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
                 'streetName' => $streetName,
                 'locality' => $city,
                 'postalCode' => $zipcode,
-                'region' => $region,
-                'countryCode' => $countryCode,
-                'county' => $county,
+                'adminLevels' => $adminLevels,
+                'countryCode' => $countryCode
             ]),
         ]);
     }
