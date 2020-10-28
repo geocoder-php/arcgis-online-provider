@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 /** WIP
- * This file is a modified version of the geocoder-php/arcgis-online-provider
- * project, modified to accept multiple addresses and use the geocodeAddresses
- * endpoint:
+ * This file is a modified version of geocoder-php/arcgis-online-provider,
+ * modified to accept multiple addresses and use the geocodeAddresses endpoint:
  * https://developers.arcgis.com/rest/geocode/api-reference/geocoding-geocode-addresses.htm
  *
- * Use of this endpoint requires an authentication token for service credits:
+ * Use of this endpoint requires an ArcGIS World Geocoding Service token:
  * https://developers.arcgis.com/rest/geocode/api-reference/geocoding-authenticate-a-request.htm
  *
  * @license    MIT License
