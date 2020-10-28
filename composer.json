@@ -1,7 +1,7 @@
 {
-    "name": "geocoder-php/arcgis-online-provider",
+    "name": "wantell/arcgis-online-provider",
     "type": "library",
-    "description": "Geocoder ArcGIS Online adapter",
+    "description": "Geocoder ArcGIS Online for geocodeAddresses endpoint",
     "keywords": [],
     "homepage": "http://geocoder-php.org/Geocoder/",
     "license": "MIT",
@@ -9,6 +9,10 @@
         {
             "name": "William Durand",
             "email": "william.durand1@gmail.com"
+        },
+        {
+            "name": "William Antell",
+            "email": "wantell@plan-sys.com"
         }
     ],
     "require": {
@@ -32,7 +36,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Geocoder\\Provider\\ArcGISOnline\\": ""
+            "Geocoder\\Provider\\ArcGISList\\": ""
         },
         "exclude-from-classmap": [
             "/Tests/"

@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-/*
- * This file is part of the Geocoder package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+/** WIP
+ * This file is a modified version of the geocoder-php/arcgis-online-provider
+ * project, modified to accept multiple addresses and use the geocodeAddresses
+ * endpoint:
+ * https://developers.arcgis.com/rest/geocode/api-reference/geocoding-geocode-addresses.htm
+ *
+ * Use of this endpoint requires an authentication token for service credits:
+ * https://developers.arcgis.com/rest/geocode/api-reference/geocoding-authenticate-a-request.htm
  *
  * @license    MIT License
  */
 
-namespace Geocoder\Provider\ArcGISOnline;
+namespace Geocoder\Provider\ArcGISList;
 
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidArgument;
@@ -27,17 +31,17 @@ use Http\Client\HttpClient;
 /**
  * @author ALKOUM Dorian <baikunz@gmail.com>
  */
-final class ArcGISOnline extends AbstractHttpProvider implements Provider
+final class ArcGISList extends AbstractHttpProvider implements Provider
 {
     /**
      * @var string
      */
-    const ENDPOINT_URL = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/find?text=%s';
+    const ENDPOINT_URL = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/geocodeAddresses?token=%s&addresses=%s';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?location=%F,%F';
+    private $token;
 
     /**
      * @var string
@@ -45,13 +49,35 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
     private $sourceCountry;
 
     /**
+     * ArcGIS World Geocoding Service
+     * https://developers.arcgis.com/rest/geocode/api-reference/overview-world-geocoding-service.htm
+     *
      * @param HttpClient $client        An HTTP adapter
+     * @param string     $token         Your authentication token
+     * @param string     $sourceCountry Country biasing (optional)
+     *
+     * @return GoogleMaps
+     */
+    public static function token(
+        HttpClient $client,
+        string $token,
+        string $sourceCountry = null
+    ) {
+        $provider = new self($client, $token, $sourceCountry);
+
+        return $provider;
+    }
+
+    /**
+     * @param HttpClient $client        An HTTP adapter
+     * @param string     $token
      * @param string     $sourceCountry Country biasing (optional)
      */
-    public function __construct(HttpClient $client, string $sourceCountry = null)
+    public function __construct(HttpClient $client, string $token, string $sourceCountry = null)
     {
         parent::__construct($client);
 
+        $this->token = $token;
         $this->sourceCountry = $sourceCountry;
     }
 
@@ -62,7 +88,7 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
     {
         $address = $query->getText();
         if (filter_var($address, FILTER_VALIDATE_IP)) {
-            throw new UnsupportedOperation('The ArcGISOnline provider does not support IP addresses, only street addresses.');
+            throw new UnsupportedOperation('The ArcGISList provider does not support IP addresses, only street addresses.');
         }
 
         // Save a request if no valid address entered
@@ -70,7 +96,7 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
             throw new InvalidArgument('Address cannot be empty.');
         }
 
-        $url = sprintf(self::ENDPOINT_URL, urlencode($address));
+        $url = sprintf(self::ENDPOINT_URL, $token, urlencode($address));
         $json = $this->executeQuery($url, $query->getLimit());
 
         // no result
@@ -115,49 +141,9 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
     /**
      * {@inheritdoc}
      */
-    public function reverseQuery(ReverseQuery $query): Collection
-    {
-        $coordinates = $query->getCoordinates();
-        $longitude = $coordinates->getLongitude();
-        $latitude = $coordinates->getLatitude();
-
-        $url = sprintf(self::REVERSE_ENDPOINT_URL, $longitude, $latitude);
-        $json = $this->executeQuery($url, $query->getLimit());
-
-        if (property_exists($json, 'error')) {
-            return new AddressCollection([]);
-        }
-
-        $data = $json->address;
-
-        $streetName = !empty($data->Address) ? $data->Address : null;
-        $city = !empty($data->City) ? $data->City : null;
-        $zipcode = !empty($data->Postal) ? $data->Postal : null;
-        $region = !empty($data->Region) ? $data->Region : null;
-        $county = !empty($data->Subregion) ? $data->Subregion : null;
-        $countryCode = !empty($data->CountryCode) ? $data->CountryCode : null;
-
-        return new AddressCollection([
-            Address::createFromArray([
-                'providedBy' => $this->getName(),
-                'latitude' => $latitude,
-                'longitude' => $longitude,
-                'streetName' => $streetName,
-                'locality' => $city,
-                'postalCode' => $zipcode,
-                'region' => $region,
-                'countryCode' => $countryCode,
-                'county' => $county,
-            ]),
-        ]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
-        return 'arcgis_online';
+        return 'arcgis_list';
     }
 
     /**
@@ -172,7 +158,7 @@ final class ArcGISOnline extends AbstractHttpProvider implements Provider
             $query = sprintf('%s&sourceCountry=%s', $query, $this->sourceCountry);
         }
 
-        return sprintf('%s&maxLocations=%d&f=%s&outFields=*', $query, $limit, 'json');
+        return sprintf('%s&f=%s', $query, 'json');
     }
 
     /**
